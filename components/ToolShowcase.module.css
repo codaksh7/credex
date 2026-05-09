@@ -36,7 +36,6 @@
   flex-direction: column;
   gap: 0.5rem;
   transition: border-color 0.3s ease, transform 0.2s ease;
-  cursor: default;
 }
 
 .item:hover {
@@ -54,9 +53,18 @@
   color: var(--muted);
 }
 
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .section {
+    padding: 4rem 1.5rem;
   }
 }
 
@@ -67,5 +75,8 @@
   }
   .section {
     padding: 3rem 1rem;
+  }
+  .item {
+    padding: 1.25rem;
   }
 }

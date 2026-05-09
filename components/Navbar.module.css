@@ -47,6 +47,19 @@
   box-shadow: 0 0 20px var(--accent-glow);
 }
 
+@media (max-width: 768px) {
+  .nav {
+    padding: 1rem 1.5rem;
+  }
+  .logo span {
+    font-size: 1.15rem;
+  }
+  .cta {
+    padding: 0.5rem 1.2rem;
+    font-size: 0.85rem;
+  }
+}
+
 @media (max-width: 480px) {
   .nav {
     padding: 1rem 1.25rem;

@@ -24,7 +24,16 @@
   font-size: 0.85rem;
 }
 
+@media (max-width: 768px) {
+  .footer {
+    padding: 2.5rem 1.5rem;
+  }
+}
+
 @media (max-width: 480px) {
+  .footer {
+    padding: 2rem 1rem;
+  }
   .inner {
     flex-direction: column;
     gap: 0.5rem;

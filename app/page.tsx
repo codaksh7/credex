@@ -3,7 +3,9 @@
 import InteractiveGrid from '@/components/InteractiveGrid';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
+import ScrollStats from '@/components/ScrollStats';
 import HowItWorks from '@/components/HowItWorks';
+import NetworkGraph from '@/components/NetworkGraph';
 import ToolShowcase from '@/components/ToolShowcase';
 import FAQ from '@/components/FAQ';
 import Footer from '@/components/Footer';
@@ -15,7 +17,9 @@ export default function Home() {
       <InteractiveGrid />
       <Navbar />
       <Hero />
+      <ScrollStats />
       <HowItWorks />
+      <NetworkGraph />
       <ToolShowcase />
 
       <section style={{

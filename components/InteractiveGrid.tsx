@@ -14,10 +14,15 @@ export default function InteractiveGrid() {
 
     let mouseX = -1000;
     let mouseY = -1000;
+    let targetMouseX = -1000;
+    let targetMouseY = -1000;
     let animationId: number;
-    const dots: { x: number; y: number; baseRadius: number }[] = [];
+
+    const dots: { x: number; y: number; originX: number; originY: number; vx: number; vy: number }[] = [];
     const spacing = 40;
-    const influenceRadius = 150;
+    const influenceRadius = 250;
+    const friction = 0.8;
+    const ease = 0.12;
 
     function resize() {
       canvas!.width = window.innerWidth;
@@ -31,50 +36,78 @@ export default function InteractiveGrid() {
       const rows = Math.ceil(canvas!.height / spacing) + 1;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          dots.push({ x: c * spacing, y: r * spacing, baseRadius: 1.2 });
+          const x = c * spacing;
+          const y = r * spacing;
+          dots.push({ x, y, originX: x, originY: y, vx: 0, vy: 0 });
         }
       }
     }
 
     function draw() {
       ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
+
+      mouseX += (targetMouseX - mouseX) * ease;
+      mouseY += (targetMouseY - mouseY) * ease;
+
+      if (targetMouseX !== -1000) {
+        const grd = ctx!.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, influenceRadius);
+        grd.addColorStop(0, 'rgba(0, 230, 118, 0.05)');
+        grd.addColorStop(1, 'rgba(0, 230, 118, 0)');
+        ctx!.fillStyle = grd;
+        ctx!.fillRect(0, 0, canvas!.width, canvas!.height);
+      }
+
       for (let i = 0; i < dots.length; i++) {
         const dot = dots[i];
         const dx = mouseX - dot.x;
         const dy = mouseY - dot.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const t = Math.max(0, 1 - dist / influenceRadius);
-        const radius = dot.baseRadius + t * 4;
-        const alpha = 0.15 + t * 0.85;
-        const green = Math.floor(230 * t);
+
+        if (dist < influenceRadius) {
+          const angle = Math.atan2(dy, dx);
+          const force = (influenceRadius - dist) / influenceRadius;
+          dot.vx -= Math.cos(angle) * force * 1.5;
+          dot.vy -= Math.sin(angle) * force * 1.5;
+        }
+
+        dot.vx += (dot.originX - dot.x) * 0.1;
+        dot.vy += (dot.originY - dot.y) * 0.1;
+        dot.vx *= friction;
+        dot.vy *= friction;
+        dot.x += dot.vx;
+        dot.y += dot.vy;
+
+        const opacityDist = Math.sqrt(Math.pow(mouseX - dot.x, 2) + Math.pow(mouseY - dot.y, 2));
+        const t = Math.max(0, 1 - opacityDist / influenceRadius);
+        const radius = 1.2 + t * 4.5;
+        const alpha = 0.08 + t * 0.9;
+
         ctx!.beginPath();
         ctx!.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
-        ctx!.fillStyle = t > 0.05
-          ? `rgba(0, ${green}, ${Math.floor(118 * t)}, ${alpha})`
-          : `rgba(255, 255, 255, 0.08)`;
+
+        if (t > 0.01) {
+          ctx!.shadowBlur = t * 15;
+          ctx!.shadowColor = '#00e676';
+          ctx!.fillStyle = `rgba(0, 230, 118, ${alpha})`;
+        } else {
+          ctx!.shadowBlur = 0;
+          ctx!.fillStyle = `rgba(255, 255, 255, 0.08)`;
+        }
+
         ctx!.fill();
       }
+
       animationId = requestAnimationFrame(draw);
     }
 
     function handleMouseMove(e: MouseEvent) {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
+      targetMouseX = e.clientX;
+      targetMouseY = e.clientY;
     }
 
     function handleMouseLeave() {
-      mouseX = -1000;
-      mouseY = -1000;
-    }
-
-    function handleTouchMove(e: TouchEvent) {
-      mouseX = e.touches[0].clientX;
-      mouseY = e.touches[0].clientY;
-    }
-
-    function handleTouchEnd() {
-      mouseX = -1000;
-      mouseY = -1000;
+      targetMouseX = -1000;
+      targetMouseY = -1000;
     }
 
     resize();
@@ -83,16 +116,12 @@ export default function InteractiveGrid() {
     window.addEventListener('resize', resize);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseleave', handleMouseLeave);
-    window.addEventListener('touchmove', handleTouchMove);
-    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseleave', handleMouseLeave);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, []);
 
@@ -107,6 +136,7 @@ export default function InteractiveGrid() {
         height: '100%',
         zIndex: 0,
         pointerEvents: 'none',
+        background: '#050505'
       }}
     />
   );

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import MagneticButton from './MagneticButton';
+import WireframeSphere from './WireframeSphere';
 import styles from './Hero.module.css';
 
 export default function Hero() {
@@ -13,14 +14,11 @@ export default function Hero() {
 
   useEffect(() => {
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
     tl.fromTo(badgeRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, delay: 0.5 });
-
     if (titleRef.current) {
       const words = titleRef.current.querySelectorAll('.word');
       tl.fromTo(words, { opacity: 0, y: 60, rotateX: -40 }, { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.08 }, '-=0.3');
     }
-
     tl.fromTo(subtitleRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7 }, '-=0.4');
     tl.fromTo(ctaRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6 }, '-=0.3');
   }, []);
@@ -30,6 +28,7 @@ export default function Hero() {
 
   return (
     <section className={styles.hero}>
+      <WireframeSphere />
       <div className={styles.content}>
         <div ref={badgeRef} className={styles.badge}>
           <span className={styles.dot} />

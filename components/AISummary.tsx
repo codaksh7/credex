@@ -22,13 +22,12 @@ export default function AISummary({ results, teamSize, primaryUseCase }: AISumma
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ results, teamSize, primaryUseCase })
         });
-        
+
         if (!response.ok) throw new Error('API Error');
-        
+
         const data = await response.json();
         setSummary(data.summary);
-      } catch (error) {
-        // Graceful fallback if Anthropic API fails or keys are missing
+      } catch {
         const totalSavings = results.reduce((acc, curr) => acc + curr.savings, 0);
         setSummary(`Based on our analysis for your ${teamSize}-person team focused on ${primaryUseCase}, you have a potential monthly savings of $${totalSavings}. Several of your current plans are over-provisioned for your usage level. We recommend reviewing the detailed breakdown below and adjusting your tiers to eliminate retail overspend.`);
       } finally {
