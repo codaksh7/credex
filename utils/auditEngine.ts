@@ -8,66 +8,93 @@ export interface AuditResult {
   reason: string;
 }
 
+export const TOOL_BENCHMARKS: Record<string, { quality: number; speed: number; costPerTask: number }> = {
+  'Cursor': { quality: 93, speed: 95, costPerTask: 0.12 },
+  'GitHub Copilot': { quality: 88, speed: 90, costPerTask: 0.15 },
+  'Claude': { quality: 96, speed: 85, costPerTask: 0.08 },
+  'ChatGPT': { quality: 90, speed: 92, costPerTask: 0.10 },
+  'Gemini': { quality: 87, speed: 88, costPerTask: 0.09 },
+  'Windsurf': { quality: 85, speed: 91, costPerTask: 0.11 },
+  'Anthropic API': { quality: 96, speed: 80, costPerTask: 0.04 },
+  'OpenAI API': { quality: 91, speed: 88, costPerTask: 0.05 },
+};
+
 export const analyzeSpend = (tools: ToolInput[], teamSize: number, primaryUseCase: UseCase): AuditResult[] => {
   const results: AuditResult[] = [];
+
+  const bestByUseCase: Record<UseCase, string> = {
+    coding: 'Cursor',
+    writing: 'Claude',
+    data: 'ChatGPT',
+    research: 'Claude',
+    mixed: 'ChatGPT'
+  };
 
   tools.forEach(tool => {
     let savings = 0;
     let recommendedAction = 'Keep current plan';
     let reason = "You're spending well. No immediate optimization found.";
 
-    // Logic for Cursor
-    if (tool.name === 'Cursor') {
-      if (tool.plan === 'Business' && tool.seats < 5) {
-        savings = tool.monthlySpend - (tool.seats * 20); // Switch to Pro
-        recommendedAction = 'Downgrade to Pro';
-        reason = `Business plan requires minimum 5 seats for maximum value. For ${tool.seats} users, Pro is sufficient.`;
+    const bestToolForCase = bestByUseCase[primaryUseCase] || 'ChatGPT';
+
+    // 1. Check for Downgrade Opportunities (Over-provisioning)
+    let isDowngrade = false;
+    if (tool.name === 'GitHub Copilot' && tool.plan === 'Enterprise' && teamSize < 20) {
+      savings = tool.monthlySpend - (tool.seats * 19); 
+      recommendedAction = 'Downgrade to Business';
+      reason = `Enterprise features are rarely utilized effectively by teams smaller than 20. Downgrading saves $${savings}/mo.`;
+      isDowngrade = true;
+    } else if (tool.name === 'Cursor' && tool.plan === 'Business' && tool.seats < 5) {
+      savings = tool.monthlySpend - (tool.seats * 20); 
+      recommendedAction = 'Downgrade to Pro';
+      reason = `Business plan requires minimum 5 seats for maximum value. For ${tool.seats} users, Pro is sufficient, saving $${savings}/mo.`;
+      isDowngrade = true;
+    } else if (tool.name === 'Claude' && tool.plan === 'Team' && tool.seats < 5) {
+      savings = tool.monthlySpend - (tool.seats * 20); 
+      recommendedAction = 'Downgrade to Pro';
+      reason = `Claude Team plan is optimized for larger groups. Individual Pro accounts are cheaper for ${tool.seats} seats, saving $${savings}/mo.`;
+      isDowngrade = true;
+    } else if (tool.name === 'ChatGPT' && tool.plan === 'Team' && tool.seats < 3) {
+      savings = tool.monthlySpend - (tool.seats * 20);
+      recommendedAction = 'Downgrade to Plus';
+      reason = `Team workspace features aren't cost-effective for fewer than 3 seats compared to individual Plus accounts, saving $${savings}/mo.`;
+      isDowngrade = true;
+    }
+
+    // 2. Check for Tool Switch (Better tool for the use case)
+    if (!isDowngrade && tool.name !== bestToolForCase && TOOL_BENCHMARKS[bestToolForCase] && TOOL_BENCHMARKS[tool.name]) {
+      const currentBench = TOOL_BENCHMARKS[tool.name];
+      const recommendedBench = TOOL_BENCHMARKS[bestToolForCase];
+
+      const currentMonthly = tool.monthlySpend;
+      const targetMonthly = tool.seats * 20; // Basic assumption for Pro tiers
+
+      if (currentMonthly > targetMonthly) {
+        savings = currentMonthly - targetMonthly;
+        recommendedAction = `Switch to ${bestToolForCase}`;
+        reason = `For ${primaryUseCase}, ${bestToolForCase} provides ${Math.max(0, recommendedBench.quality - currentBench.quality)}% better quality. Switching saves $${savings}/mo.`;
+      } else if (currentMonthly === targetMonthly) {
+        recommendedAction = `Switch to ${bestToolForCase}`;
+        reason = `For ${primaryUseCase}, ${bestToolForCase} provides better performance (${recommendedBench.quality}% quality vs ${currentBench.quality}%) for the same price.`;
+      } else {
+        const costIncrease = targetMonthly - currentMonthly;
+        recommendedAction = `Upgrade to ${bestToolForCase}`;
+        reason = `For ${primaryUseCase}, ${bestToolForCase} boosts quality by ${Math.max(0, recommendedBench.quality - currentBench.quality)}% and speed by ${Math.max(0, recommendedBench.speed - currentBench.speed)}%. This upgrade costs $${costIncrease}/mo more but significantly improves output.`;
       }
     }
 
-    // Logic for GitHub Copilot
-    if (tool.name === 'GitHub Copilot') {
-      if (tool.plan === 'Enterprise' && teamSize < 20) {
-        savings = tool.monthlySpend - (tool.seats * 19); // Switch to Business
-        recommendedAction = 'Downgrade to Business';
-        reason = `Enterprise features (like custom models) are rarely utilized effectively by teams smaller than 20.`;
-      }
-    }
-
-    // Logic for Claude
-    if (tool.name === 'Claude') {
-      if (tool.plan === 'Team' && tool.seats < 5) {
-        savings = tool.monthlySpend - (tool.seats * 20); // Switch to Pro
-        recommendedAction = 'Downgrade to Pro';
-        reason = `Claude Team plan is optimized for larger groups. Individual Pro accounts are cheaper for ${tool.seats} seats.`;
-      } else if (primaryUseCase === 'coding' && tool.plan === 'Pro' && !tools.some(t => t.name === 'Cursor')) {
-        savings = 0;
-        recommendedAction = 'Switch to Cursor';
-        reason = `For coding, Cursor provides better native IDE integration than Claude web UI for the same $20 price point.`;
-      }
-    }
-
-    // Logic for ChatGPT
-    if (tool.name === 'ChatGPT') {
-      if (tool.plan === 'Team' && tool.seats < 3) {
-         savings = tool.monthlySpend - (tool.seats * 20);
-         recommendedAction = 'Downgrade to Plus';
-         reason = `Team workspace features aren't cost-effective for fewer than 3 seats compared to individual Plus accounts.`;
-      }
-    }
-
-    // Credit Logic (Generic for all tools if spending is high)
-    if (tool.monthlySpend >= 500 && savings === 0) {
-      savings = Math.floor(tool.monthlySpend * 0.2); // Estimated 20% savings via Credex
+    // 3. Check for Credex Credits (If spending is high and no structural savings found)
+    if (tool.monthlySpend >= 500 && savings === 0 && recommendedAction === 'Keep current plan') {
+      savings = Math.floor(tool.monthlySpend * 0.2); 
       recommendedAction = 'Purchase through Credex Credits';
-      reason = `You are paying retail. Credex can source discounted credits for this tool, saving you roughly 20%.`;
+      reason = `Your team is configured optimally, but you are paying retail. Credex can source discounted credits for ${tool.name}, saving roughly 20% ($${savings}/mo).`;
     }
 
     results.push({
       toolName: tool.name,
       currentSpend: tool.monthlySpend,
       recommendedAction,
-      savings,
+      savings: Math.max(0, savings), // ensure savings is never negative
       reason
     });
   });

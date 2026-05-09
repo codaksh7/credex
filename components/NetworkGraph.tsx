@@ -56,8 +56,9 @@ export default function NetworkGraph() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let w = section.clientWidth;
-    let h = 500;
+    const rect = canvas.getBoundingClientRect();
+    let w = rect.width;
+    let h = 500; // Fixed height in CSS
     canvas.width = w;
     canvas.height = h;
 
@@ -87,6 +88,22 @@ export default function NetworkGraph() {
       const rect = canvas.getBoundingClientRect();
       mouseX = e.clientX - rect.left;
       mouseY = e.clientY - rect.top;
+
+      let found = false;
+      for (const node of nodes) {
+        const dx = mouseX - node.x;
+        const dy = mouseY - node.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 30) {
+          setTooltip({
+            x: node.x,
+            y: node.y,
+            info: { label: node.label, price: node.price, best: node.best, saving: node.saving, efficiency: node.efficiency }
+          });
+          found = true;
+          break;
+        }
+      }
+      if (!found) setTooltip(null);
     };
 
     const handleMouseLeave = () => {
@@ -95,33 +112,8 @@ export default function NetworkGraph() {
       setTooltip(null);
     };
 
-    const handleClick = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
-
-      for (const node of nodes) {
-        const dx = cx - node.x;
-        const dy = cy - node.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 30) {
-          setTooltip(prev => {
-            if (prev && prev.info.label === node.label) return null;
-            return {
-              x: node.x,
-              y: node.y,
-              info: { label: node.label, price: node.price, best: node.best, saving: node.saving, efficiency: node.efficiency }
-            };
-          });
-          return;
-        }
-      }
-      setTooltip(null);
-    };
-
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseleave', handleMouseLeave);
-    canvas.addEventListener('click', handleClick);
 
     function simulate() {
       for (let i = 0; i < nodes.length; i++) {
@@ -163,12 +155,6 @@ export default function NetworkGraph() {
 
         const dx = mouseX - node.x;
         const dy = mouseY - node.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120 && dist > 0) {
-          const force = (120 - dist) / 120;
-          node.vx -= (dx / dist) * force * 1.5;
-          node.vy -= (dy / dist) * force * 1.5;
-        }
 
         node.vx *= 0.92;
         node.vy *= 0.92;
@@ -231,11 +217,7 @@ export default function NetworkGraph() {
         ctx!.textAlign = 'center';
         ctx!.fillText(node.label, node.x, node.y - r - 10);
 
-        if (hover) {
-          ctx!.font = '500 10px Inter, sans-serif';
-          ctx!.fillStyle = 'rgba(0, 230, 118, 0.8)';
-          ctx!.fillText('click for details', node.x, node.y + r + 16);
-        }
+
       }
 
       let anyHover = false;
@@ -253,7 +235,7 @@ export default function NetworkGraph() {
     draw();
 
     const handleResize = () => {
-      w = section.clientWidth;
+      w = canvas.getBoundingClientRect().width;
       canvas.width = w;
       setTooltip(null);
     };
@@ -264,7 +246,6 @@ export default function NetworkGraph() {
       cancelAnimationFrame(animId);
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
-      canvas.removeEventListener('click', handleClick);
       window.removeEventListener('resize', handleResize);
     };
   }, []);
@@ -272,7 +253,7 @@ export default function NetworkGraph() {
   return (
     <section ref={sectionRef} className={styles.section}>
       <h2 className={styles.heading}>AI Tool Ecosystem</h2>
-      <p className={styles.subheading}>Click any node to see pricing, savings, and efficiency data.</p>
+      <p className={styles.subheading}>Hover over any node to see pricing, savings, and efficiency data.</p>
       <div className={styles.canvasWrap}>
         <canvas ref={canvasRef} className={styles.canvas} />
         {tooltip && (

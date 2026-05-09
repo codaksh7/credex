@@ -4,20 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { useRouter } from 'next/navigation';
 import { useAuditStore } from '@/store/useAuditStore';
-import { analyzeSpend, AuditResult } from '@/utils/auditEngine';
+import { analyzeSpend, AuditResult, TOOL_BENCHMARKS } from '@/utils/auditEngine';
 import AISummary from './AISummary';
 import styles from './AuditResults.module.css';
 
-const TOOL_BENCHMARKS: Record<string, { quality: number; speed: number; costPerTask: number }> = {
-  'Cursor': { quality: 93, speed: 95, costPerTask: 0.12 },
-  'GitHub Copilot': { quality: 88, speed: 90, costPerTask: 0.15 },
-  'Claude': { quality: 96, speed: 85, costPerTask: 0.08 },
-  'ChatGPT': { quality: 90, speed: 92, costPerTask: 0.10 },
-  'Gemini': { quality: 87, speed: 88, costPerTask: 0.09 },
-  'Windsurf': { quality: 85, speed: 91, costPerTask: 0.11 },
-  'Anthropic API': { quality: 96, speed: 80, costPerTask: 0.04 },
-  'OpenAI API': { quality: 91, speed: 88, costPerTask: 0.05 },
-};
 
 export default function AuditResults() {
   const router = useRouter();
