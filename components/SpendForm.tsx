@@ -2,8 +2,14 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { useAuditStore, ToolName, UseCase } from '@/store/useAuditStore';
+import { useAuditStore, ToolName, UseCase, ToolUseCase } from '@/store/useAuditStore';
 import styles from './SpendForm.module.css';
+
+const TOOL_USE_CASES: ToolUseCase[] = [
+  'Coding & IDE', 'Content Writing', 'Data Analysis', 'Academic Research', 
+  'Market Research', 'Customer Support', 'Agentic Workflows', 
+  'General Assistant', 'SEO & Marketing', 'Image Generation'
+];
 
 const AVAILABLE_TOOLS: { name: ToolName; plans: string[] }[] = [
   { name: 'Cursor', plans: ['Hobby', 'Pro', 'Business'] },
@@ -36,6 +42,7 @@ export default function SpendForm({ onComplete }: SpendFormProps) {
   const [plan, setPlan] = useState('');
   const [spend, setSpend] = useState('');
   const [seats, setSeats] = useState('');
+  const [toolUseCase, setToolUseCase] = useState<ToolUseCase>('Coding & IDE');
 
   useEffect(() => {
     if (formRef.current) {
@@ -52,7 +59,7 @@ export default function SpendForm({ onComplete }: SpendFormProps) {
   const handleAddTool = (e: React.FormEvent) => {
     e.preventDefault();
     if (!plan || !spend || !seats) return;
-    addTool({ name: selectedTool, plan, monthlySpend: Number(spend), seats: Number(seats) });
+    addTool({ name: selectedTool, plan, monthlySpend: Number(spend), seats: Number(seats), useCase: toolUseCase });
     setSpend('');
     setSeats('');
 
@@ -114,6 +121,12 @@ export default function SpendForm({ onComplete }: SpendFormProps) {
             <label htmlFor="seats">Seats</label>
             <input id="seats" type="number" min="1" value={seats} onChange={(e) => setSeats(e.target.value)} placeholder="1" className={styles.input} required />
           </div>
+          <div className={styles.inputGroup}>
+            <label htmlFor="toolUseCase">Use case:</label>
+            <select id="toolUseCase" value={toolUseCase} onChange={(e) => setToolUseCase(e.target.value as ToolUseCase)} className={styles.input}>
+              {TOOL_USE_CASES.map(uc => <option key={uc} value={uc}>{uc}</option>)}
+            </select>
+          </div>
         </div>
         <button type="submit" className={styles.addButton}>+ Add Tool</button>
       </form>
@@ -127,7 +140,10 @@ export default function SpendForm({ onComplete }: SpendFormProps) {
                 <span className={styles.planBadge}>{t.plan}</span>
               </div>
               <div className={styles.toolCardBottom}>
-                <span>${t.monthlySpend}/mo &middot; {t.seats} {t.seats === 1 ? 'seat' : 'seats'}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  <span>${t.monthlySpend}/mo &middot; {t.seats} {t.seats === 1 ? 'seat' : 'seats'}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Use case: {t.useCase}</span>
+                </div>
                 <button onClick={() => removeTool(idx)} className={styles.removeButton}>Remove</button>
               </div>
             </div>

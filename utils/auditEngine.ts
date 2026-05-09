@@ -22,12 +22,17 @@ export const TOOL_BENCHMARKS: Record<string, { quality: number; speed: number; c
 export const analyzeSpend = (tools: ToolInput[], teamSize: number, primaryUseCase: UseCase): AuditResult[] => {
   const results: AuditResult[] = [];
 
-  const bestByUseCase: Record<UseCase, string> = {
-    coding: 'Cursor',
-    writing: 'Claude',
-    data: 'ChatGPT',
-    research: 'Claude',
-    mixed: 'ChatGPT'
+  const bestByUseCase: Record<string, string> = {
+    'Coding & IDE': 'Cursor',
+    'Content Writing': 'Claude',
+    'Data Analysis': 'ChatGPT',
+    'Academic Research': 'Claude',
+    'Market Research': 'ChatGPT',
+    'Customer Support': 'Anthropic API',
+    'Agentic Workflows': 'Windsurf',
+    'General Assistant': 'ChatGPT',
+    'SEO & Marketing': 'Claude',
+    'Image Generation': 'ChatGPT'
   };
 
   tools.forEach(tool => {
@@ -35,7 +40,8 @@ export const analyzeSpend = (tools: ToolInput[], teamSize: number, primaryUseCas
     let recommendedAction = 'Keep current plan';
     let reason = "You're spending well. No immediate optimization found.";
 
-    const bestToolForCase = bestByUseCase[primaryUseCase] || 'ChatGPT';
+    // Fallback to ChatGPT if use case isn't mapped
+    const bestToolForCase = tool.useCase ? bestByUseCase[tool.useCase] || 'ChatGPT' : 'ChatGPT';
 
     // 1. Check for Downgrade Opportunities (Over-provisioning)
     let isDowngrade = false;
@@ -72,14 +78,14 @@ export const analyzeSpend = (tools: ToolInput[], teamSize: number, primaryUseCas
       if (currentMonthly > targetMonthly) {
         savings = currentMonthly - targetMonthly;
         recommendedAction = `Switch to ${bestToolForCase}`;
-        reason = `For ${primaryUseCase}, ${bestToolForCase} provides ${Math.max(0, recommendedBench.quality - currentBench.quality)}% better quality. Switching saves $${savings}/mo.`;
+        reason = `For ${tool.useCase}, ${bestToolForCase} provides ${Math.max(0, recommendedBench.quality - currentBench.quality)}% better quality. Switching saves $${savings}/mo.`;
       } else if (currentMonthly === targetMonthly) {
         recommendedAction = `Switch to ${bestToolForCase}`;
-        reason = `For ${primaryUseCase}, ${bestToolForCase} provides better performance (${recommendedBench.quality}% quality vs ${currentBench.quality}%) for the same price.`;
+        reason = `For ${tool.useCase}, ${bestToolForCase} provides better performance (${recommendedBench.quality}% quality vs ${currentBench.quality}%) for the same price.`;
       } else {
         const costIncrease = targetMonthly - currentMonthly;
         recommendedAction = `Upgrade to ${bestToolForCase}`;
-        reason = `For ${primaryUseCase}, ${bestToolForCase} boosts quality by ${Math.max(0, recommendedBench.quality - currentBench.quality)}% and speed by ${Math.max(0, recommendedBench.speed - currentBench.speed)}%. This upgrade costs $${costIncrease}/mo more but significantly improves output.`;
+        reason = `For ${tool.useCase}, ${bestToolForCase} boosts quality by ${Math.max(0, recommendedBench.quality - currentBench.quality)}% and speed by ${Math.max(0, recommendedBench.speed - currentBench.speed)}%. This upgrade costs $${costIncrease}/mo more but significantly improves output.`;
       }
     }
 

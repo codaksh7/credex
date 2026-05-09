@@ -3,12 +3,14 @@ import { persist } from 'zustand/middleware';
 
 export type ToolName = 'Cursor' | 'GitHub Copilot' | 'Claude' | 'ChatGPT' | 'Gemini' | 'Windsurf' | 'Anthropic API' | 'OpenAI API';
 export type UseCase = 'coding' | 'writing' | 'data' | 'research' | 'mixed';
+export type ToolUseCase = 'Coding & IDE' | 'Content Writing' | 'Data Analysis' | 'Academic Research' | 'Market Research' | 'Customer Support' | 'Agentic Workflows' | 'General Assistant' | 'SEO & Marketing' | 'Image Generation';
 
 export interface ToolInput {
   name: ToolName;
   plan: string;
   monthlySpend: number;
   seats: number;
+  useCase: ToolUseCase;
 }
 
 export interface AuditState {
