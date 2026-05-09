@@ -19,6 +19,17 @@ export const TOOL_BENCHMARKS: Record<string, { quality: number; speed: number; c
   'OpenAI API': { quality: 91, speed: 88, costPerTask: 0.05 },
 };
 
+export const PLAN_PRICES: Record<string, Record<string, number>> = {
+  'Cursor': { 'Hobby': 0, 'Pro': 20, 'Business': 40 },
+  'GitHub Copilot': { 'Individual': 19, 'Business': 19, 'Enterprise': 39 },
+  'Claude': { 'Free': 0, 'Pro': 20, 'Team': 30 },
+  'ChatGPT': { 'Plus': 20, 'Team': 30 },
+  'Gemini': { 'Advanced': 20 },
+  'Windsurf': { 'Free': 0, 'Pro': 15 },
+  'Anthropic API': { 'Pay as you go': 50 }, 
+  'OpenAI API': { 'Pay as you go': 50 },
+};
+
 export const analyzeSpend = (tools: ToolInput[], teamSize: number, primaryUseCase: UseCase): AuditResult[] => {
   const results: AuditResult[] = [];
 
@@ -73,7 +84,19 @@ export const analyzeSpend = (tools: ToolInput[], teamSize: number, primaryUseCas
       const recommendedBench = TOOL_BENCHMARKS[bestToolForCase];
 
       const currentMonthly = tool.monthlySpend;
-      const targetMonthly = tool.seats * 20; // Basic assumption for Pro tiers
+      
+      // Determine target monthly based on the recommended tool's Pro/Team tier
+      let targetPricePerSeat = 20; // Default fallback
+      if (PLAN_PRICES[bestToolForCase]) {
+         const plans = PLAN_PRICES[bestToolForCase];
+         if ('Pro' in plans) targetPricePerSeat = plans['Pro'];
+         else if ('Plus' in plans) targetPricePerSeat = plans['Plus'];
+         else if ('Advanced' in plans) targetPricePerSeat = plans['Advanced'];
+         else if ('Pay as you go' in plans) targetPricePerSeat = plans['Pay as you go'];
+         else if ('Business' in plans) targetPricePerSeat = plans['Business'];
+      }
+      
+      const targetMonthly = tool.seats * targetPricePerSeat;
 
       if (currentMonthly > targetMonthly) {
         savings = currentMonthly - targetMonthly;

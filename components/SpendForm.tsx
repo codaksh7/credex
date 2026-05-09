@@ -11,6 +11,8 @@ const TOOL_USE_CASES: ToolUseCase[] = [
   'General Assistant', 'SEO & Marketing', 'Image Generation'
 ];
 
+import { analyzeSpend, AuditResult, TOOL_BENCHMARKS, PLAN_PRICES } from '@/utils/auditEngine';
+
 const AVAILABLE_TOOLS: { name: ToolName; plans: string[] }[] = [
   { name: 'Cursor', plans: ['Hobby', 'Pro', 'Business'] },
   { name: 'GitHub Copilot', plans: ['Individual', 'Business', 'Enterprise'] },
@@ -40,8 +42,7 @@ export default function SpendForm({ onComplete }: SpendFormProps) {
 
   const [selectedTool, setSelectedTool] = useState<ToolName>('Cursor');
   const [plan, setPlan] = useState('');
-  const [spend, setSpend] = useState('');
-  const [seats, setSeats] = useState('');
+  const [seats, setSeats] = useState('1');
   const [toolUseCase, setToolUseCase] = useState<ToolUseCase>('Coding & IDE');
 
   useEffect(() => {
@@ -51,6 +52,8 @@ export default function SpendForm({ onComplete }: SpendFormProps) {
   }, []);
 
   const currentToolPlans = AVAILABLE_TOOLS.find(t => t.name === selectedTool)?.plans || [];
+  const currentPricePerSeat = plan && PLAN_PRICES[selectedTool] ? (PLAN_PRICES[selectedTool][plan] || 0) : 0;
+  const calculatedSpend = currentPricePerSeat * Math.max(1, Number(seats));
 
   useEffect(() => {
     setPlan(currentToolPlans[0] || '');
@@ -58,10 +61,9 @@ export default function SpendForm({ onComplete }: SpendFormProps) {
 
   const handleAddTool = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!plan || !spend || !seats) return;
-    addTool({ name: selectedTool, plan, monthlySpend: Number(spend), seats: Number(seats), useCase: toolUseCase });
-    setSpend('');
-    setSeats('');
+    if (!plan || !seats) return;
+    addTool({ name: selectedTool, plan, monthlySpend: calculatedSpend, seats: Number(seats), useCase: toolUseCase });
+    setSeats('1');
 
     setTimeout(() => {
       const cards = document.querySelectorAll(`.${styles.toolCard}`);
@@ -114,8 +116,10 @@ export default function SpendForm({ onComplete }: SpendFormProps) {
             </select>
           </div>
           <div className={styles.inputGroup}>
-            <label htmlFor="spend">Monthly Spend ($)</label>
-            <input id="spend" type="number" min="0" value={spend} onChange={(e) => setSpend(e.target.value)} placeholder="0" className={styles.input} required />
+            <label>Monthly Spend ($)</label>
+            <div className={styles.input} style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--border)', color: 'var(--foreground)' }}>
+              ${calculatedSpend}/mo
+            </div>
           </div>
           <div className={styles.inputGroup}>
             <label htmlFor="seats">Seats</label>
