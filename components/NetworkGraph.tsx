@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './NetworkGraph.module.css';
 
 interface Node {
@@ -10,7 +10,10 @@ interface Node {
   vy: number;
   label: string;
   radius: number;
-  color: string;
+  price: string;
+  best: string;
+  saving: string;
+  efficiency: string;
 }
 
 interface Edge {
@@ -18,7 +21,16 @@ interface Edge {
   target: number;
 }
 
-const TOOL_NAMES = ['Cursor', 'Copilot', 'Claude', 'ChatGPT', 'Gemini', 'Windsurf', 'OpenAI API', 'Anthropic API'];
+const TOOL_INFO: { label: string; price: string; best: string; saving: string; efficiency: string }[] = [
+  { label: 'Cursor', price: '$20/mo Pro', best: 'Coding', saving: 'Up to 40% vs Copilot', efficiency: '92% code completion' },
+  { label: 'Copilot', price: '$19/mo Individual', best: 'IDE Integration', saving: 'Best for GitHub users', efficiency: '88% code suggestion' },
+  { label: 'Claude', price: '$20/mo Pro', best: 'Long documents', saving: 'Free tier available', efficiency: '95% context retention' },
+  { label: 'ChatGPT', price: '$20/mo Plus', best: 'General purpose', saving: 'Team plan saves 15%', efficiency: '90% task versatility' },
+  { label: 'Gemini', price: '$20/mo Advanced', best: 'Google ecosystem', saving: 'Bundled with Workspace', efficiency: '87% multimodal' },
+  { label: 'Windsurf', price: '$15/mo Pro', best: 'Agentic coding', saving: 'Cheapest IDE AI', efficiency: '85% autonomous tasks' },
+  { label: 'OpenAI API', price: 'Pay per token', best: 'Custom apps', saving: 'Batch API 50% off', efficiency: '94% developer control' },
+  { label: 'Anthropic API', price: 'Pay per token', best: 'Safety-critical', saving: 'Haiku model 90% cheaper', efficiency: '96% instruction following' },
+];
 
 const EDGES: [number, number][] = [
   [0, 1], [0, 2], [0, 5],
@@ -33,6 +45,8 @@ const EDGES: [number, number][] = [
 export default function NetworkGraph() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; info: typeof TOOL_INFO[0] } | null>(null);
+  const nodesRef = useRef<Node[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -47,15 +61,20 @@ export default function NetworkGraph() {
     canvas.width = w;
     canvas.height = h;
 
-    const nodes: Node[] = TOOL_NAMES.map((label, i) => ({
-      x: w * 0.2 + Math.cos((i / TOOL_NAMES.length) * Math.PI * 2) * w * 0.25,
-      y: h * 0.5 + Math.sin((i / TOOL_NAMES.length) * Math.PI * 2) * h * 0.3,
+    const nodes: Node[] = TOOL_INFO.map((info, i) => ({
+      x: w * 0.2 + Math.cos((i / TOOL_INFO.length) * Math.PI * 2) * w * 0.25,
+      y: h * 0.5 + Math.sin((i / TOOL_INFO.length) * Math.PI * 2) * h * 0.3,
       vx: 0,
       vy: 0,
-      label,
-      radius: 6,
-      color: '#00e676',
+      label: info.label,
+      radius: 8,
+      price: info.price,
+      best: info.best,
+      saving: info.saving,
+      efficiency: info.efficiency,
     }));
+
+    nodesRef.current = nodes;
 
     const edges: Edge[] = EDGES.map(([s, t]) => ({ source: s, target: t }));
 
@@ -73,10 +92,36 @@ export default function NetworkGraph() {
     const handleMouseLeave = () => {
       mouseX = -1000;
       mouseY = -1000;
+      setTooltip(null);
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+
+      for (const node of nodes) {
+        const dx = cx - node.x;
+        const dy = cy - node.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 30) {
+          setTooltip(prev => {
+            if (prev && prev.info.label === node.label) return null;
+            return {
+              x: node.x,
+              y: node.y,
+              info: { label: node.label, price: node.price, best: node.best, saving: node.saving, efficiency: node.efficiency }
+            };
+          });
+          return;
+        }
+      }
+      setTooltip(null);
     };
 
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseleave', handleMouseLeave);
+    canvas.addEventListener('click', handleClick);
 
     function simulate() {
       for (let i = 0; i < nodes.length; i++) {
@@ -100,8 +145,8 @@ export default function NetworkGraph() {
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const target = 120;
-        const force = (dist - target) * 0.005;
+        const target = 140;
+        const force = (dist - target) * 0.004;
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
         a.vx += fx;
@@ -113,25 +158,25 @@ export default function NetworkGraph() {
       for (const node of nodes) {
         const cx = w / 2;
         const cy = h / 2;
-        node.vx += (cx - node.x) * 0.0003;
-        node.vy += (cy - node.y) * 0.0003;
+        node.vx += (cx - node.x) * 0.0005;
+        node.vy += (cy - node.y) * 0.0005;
 
         const dx = mouseX - node.x;
         const dy = mouseY - node.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 150 && dist > 0) {
-          const force = (150 - dist) / 150;
-          node.vx -= (dx / dist) * force * 2;
-          node.vy -= (dy / dist) * force * 2;
+        if (dist < 120 && dist > 0) {
+          const force = (120 - dist) / 120;
+          node.vx -= (dx / dist) * force * 1.5;
+          node.vy -= (dy / dist) * force * 1.5;
         }
 
-        node.vx *= 0.9;
-        node.vy *= 0.9;
+        node.vx *= 0.92;
+        node.vy *= 0.92;
         node.x += node.vx;
         node.y += node.vy;
 
-        node.x = Math.max(50, Math.min(w - 50, node.x));
-        node.y = Math.max(30, Math.min(h - 30, node.y));
+        node.x = Math.max(60, Math.min(w - 60, node.x));
+        node.y = Math.max(40, Math.min(h - 40, node.y));
       }
     }
 
@@ -145,7 +190,7 @@ export default function NetworkGraph() {
         ctx!.beginPath();
         ctx!.moveTo(a.x, a.y);
         ctx!.lineTo(b.x, b.y);
-        ctx!.strokeStyle = `rgba(0, 230, 118, ${0.08 + pulse * 0.06})`;
+        ctx!.strokeStyle = `rgba(0, 230, 118, ${0.1 + pulse * 0.05})`;
         ctx!.lineWidth = 1;
         ctx!.stroke();
       }
@@ -154,13 +199,14 @@ export default function NetworkGraph() {
         const dx = mouseX - node.x;
         const dy = mouseY - node.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const hover = dist < 80;
-        const r = hover ? node.radius + 3 : node.radius;
-        const alpha = hover ? 1 : 0.6 + pulse * 0.2;
+        const hover = dist < 30;
+        const r = hover ? 12 : node.radius;
+        const alpha = hover ? 1 : 0.7 + pulse * 0.15;
 
         if (hover) {
-          ctx!.shadowBlur = 20;
+          ctx!.shadowBlur = 25;
           ctx!.shadowColor = '#00e676';
+          canvas!.style.cursor = 'pointer';
         } else {
           ctx!.shadowBlur = 0;
         }
@@ -169,13 +215,36 @@ export default function NetworkGraph() {
         ctx!.arc(node.x, node.y, r, 0, Math.PI * 2);
         ctx!.fillStyle = `rgba(0, 230, 118, ${alpha})`;
         ctx!.fill();
+
+        if (hover) {
+          ctx!.beginPath();
+          ctx!.arc(node.x, node.y, r + 6, 0, Math.PI * 2);
+          ctx!.strokeStyle = 'rgba(0, 230, 118, 0.3)';
+          ctx!.lineWidth = 2;
+          ctx!.stroke();
+        }
+
         ctx!.shadowBlur = 0;
 
-        ctx!.font = `${hover ? '600' : '500'} ${hover ? '13px' : '11px'} Inter, sans-serif`;
-        ctx!.fillStyle = hover ? '#ffffff' : `rgba(255, 255, 255, ${0.5 + pulse * 0.2})`;
+        ctx!.font = `${hover ? '700' : '500'} ${hover ? '14px' : '12px'} Inter, sans-serif`;
+        ctx!.fillStyle = hover ? '#ffffff' : `rgba(255, 255, 255, ${0.6 + pulse * 0.15})`;
         ctx!.textAlign = 'center';
-        ctx!.fillText(node.label, node.x, node.y - r - 8);
+        ctx!.fillText(node.label, node.x, node.y - r - 10);
+
+        if (hover) {
+          ctx!.font = '500 10px Inter, sans-serif';
+          ctx!.fillStyle = 'rgba(0, 230, 118, 0.8)';
+          ctx!.fillText('click for details', node.x, node.y + r + 16);
+        }
       }
+
+      let anyHover = false;
+      for (const node of nodes) {
+        const dx = mouseX - node.x;
+        const dy = mouseY - node.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 30) { anyHover = true; break; }
+      }
+      if (!anyHover && canvas) canvas.style.cursor = 'default';
 
       simulate();
       animId = requestAnimationFrame(draw);
@@ -186,6 +255,7 @@ export default function NetworkGraph() {
     const handleResize = () => {
       w = section.clientWidth;
       canvas.width = w;
+      setTooltip(null);
     };
 
     window.addEventListener('resize', handleResize);
@@ -194,6 +264,7 @@ export default function NetworkGraph() {
       cancelAnimationFrame(animId);
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
+      canvas.removeEventListener('click', handleClick);
       window.removeEventListener('resize', handleResize);
     };
   }, []);
@@ -201,8 +272,37 @@ export default function NetworkGraph() {
   return (
     <section ref={sectionRef} className={styles.section}>
       <h2 className={styles.heading}>AI Tool Ecosystem</h2>
-      <p className={styles.subheading}>Every node is a tool we audit. Hover to explore connections.</p>
-      <canvas ref={canvasRef} className={styles.canvas} />
+      <p className={styles.subheading}>Click any node to see pricing, savings, and efficiency data.</p>
+      <div className={styles.canvasWrap}>
+        <canvas ref={canvasRef} className={styles.canvas} />
+        {tooltip && (
+          <div
+            className={styles.tooltip}
+            style={{
+              left: Math.min(tooltip.x, (sectionRef.current?.clientWidth || 800) - 260),
+              top: tooltip.y - 140,
+            }}
+          >
+            <div className={styles.tooltipHeader}>{tooltip.info.label}</div>
+            <div className={styles.tooltipRow}>
+              <span className={styles.tooltipLabel}>Price</span>
+              <span className={styles.tooltipValue}>{tooltip.info.price}</span>
+            </div>
+            <div className={styles.tooltipRow}>
+              <span className={styles.tooltipLabel}>Best for</span>
+              <span className={styles.tooltipValue}>{tooltip.info.best}</span>
+            </div>
+            <div className={styles.tooltipRow}>
+              <span className={styles.tooltipLabel}>Saving</span>
+              <span className={styles.tooltipValueGreen}>{tooltip.info.saving}</span>
+            </div>
+            <div className={styles.tooltipRow}>
+              <span className={styles.tooltipLabel}>Efficiency</span>
+              <span className={styles.tooltipValueGreen}>{tooltip.info.efficiency}</span>
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

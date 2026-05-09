@@ -2,18 +2,32 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { useRouter } from 'next/navigation';
 import { useAuditStore } from '@/store/useAuditStore';
 import { analyzeSpend, AuditResult } from '@/utils/auditEngine';
 import AISummary from './AISummary';
 import styles from './AuditResults.module.css';
 
+const TOOL_BENCHMARKS: Record<string, { quality: number; speed: number; costPerTask: number }> = {
+  'Cursor': { quality: 93, speed: 95, costPerTask: 0.12 },
+  'GitHub Copilot': { quality: 88, speed: 90, costPerTask: 0.15 },
+  'Claude': { quality: 96, speed: 85, costPerTask: 0.08 },
+  'ChatGPT': { quality: 90, speed: 92, costPerTask: 0.10 },
+  'Gemini': { quality: 87, speed: 88, costPerTask: 0.09 },
+  'Windsurf': { quality: 85, speed: 91, costPerTask: 0.11 },
+  'Anthropic API': { quality: 96, speed: 80, costPerTask: 0.04 },
+  'OpenAI API': { quality: 91, speed: 88, costPerTask: 0.05 },
+};
+
 export default function AuditResults() {
+  const router = useRouter();
   const { tools, teamSize, primaryUseCase } = useAuditStore();
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [compareTools, setCompareTools] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +64,18 @@ export default function AuditResults() {
     }
   };
 
+  const handleSwitch = () => {
+    router.push('/audit');
+  };
+
+  const toggleCompare = (toolName: string) => {
+    setCompareTools(prev =>
+      prev.includes(toolName) ? prev.filter(t => t !== toolName) : prev.length < 3 ? [...prev, toolName] : prev
+    );
+  };
+
   const isHighSavings = totalMonthlySavings > 500;
+  const allToolNames = Object.keys(TOOL_BENCHMARKS);
 
   return (
     <div ref={containerRef} className={styles.container}>
@@ -67,28 +92,151 @@ export default function AuditResults() {
             <span className={styles.period}>per year</span>
           </div>
         </div>
+        <div className={styles.statChips}>
+          <div className={styles.chip}>
+            <span className={styles.chipValue}>{results.length}</span>
+            <span className={styles.chipLabel}>Tools Audited</span>
+          </div>
+          <div className={styles.chip}>
+            <span className={styles.chipValue}>{results.filter(r => r.savings > 0).length}</span>
+            <span className={styles.chipLabel}>Can Be Optimized</span>
+          </div>
+          <div className={styles.chip}>
+            <span className={styles.chipValue}>{teamSize}</span>
+            <span className={styles.chipLabel}>Team Members</span>
+          </div>
+        </div>
       </div>
 
       <AISummary results={results} teamSize={teamSize} primaryUseCase={primaryUseCase} />
 
       <div className={styles.breakdown}>
         <h3 className={styles.sectionTitle}>Per-Tool Breakdown</h3>
-        {results.map((r, i) => (
-          <div key={i} className={styles.resultItem}>
-            <div className={styles.resultHeader}>
-              <span className={styles.toolName}>{r.toolName}</span>
-              <span className={r.savings > 0 ? styles.savingsTag : styles.optimalTag}>
-                {r.savings > 0 ? `Save $${r.savings}/mo` : 'Optimal'}
-              </span>
+        {results.map((r, i) => {
+          const bench = TOOL_BENCHMARKS[r.toolName];
+          return (
+            <div key={i} className={styles.resultItem}>
+              <div className={styles.resultHeader}>
+                <span className={styles.toolName}>{r.toolName}</span>
+                <span className={r.savings > 0 ? styles.savingsTag : styles.optimalTag}>
+                  {r.savings > 0 ? `Save $${r.savings}/mo` : 'Optimal'}
+                </span>
+              </div>
+              <p className={styles.reason}>{r.reason}</p>
+              {bench && (
+                <div className={styles.benchRow}>
+                  <div className={styles.benchItem}>
+                    <span className={styles.benchLabel}>Quality</span>
+                    <div className={styles.barWrap}>
+                      <div className={styles.bar} style={{ width: `${bench.quality}%` }} />
+                    </div>
+                    <span className={styles.benchVal}>{bench.quality}%</span>
+                  </div>
+                  <div className={styles.benchItem}>
+                    <span className={styles.benchLabel}>Speed</span>
+                    <div className={styles.barWrap}>
+                      <div className={styles.bar} style={{ width: `${bench.speed}%` }} />
+                    </div>
+                    <span className={styles.benchVal}>{bench.speed}%</span>
+                  </div>
+                  <div className={styles.benchItem}>
+                    <span className={styles.benchLabel}>Cost/task</span>
+                    <span className={styles.benchCost}>${bench.costPerTask}</span>
+                  </div>
+                </div>
+              )}
+              <div className={styles.actionRow}>
+                <span className={styles.currentSpend}>${r.currentSpend}/mo current</span>
+                <span className={styles.arrow}>&rarr;</span>
+                <button onClick={handleSwitch} className={styles.actionBtn}>
+                  {r.recommendedAction}
+                </button>
+              </div>
             </div>
-            <p className={styles.reason}>{r.reason}</p>
-            <div className={styles.actionRow}>
-              <span className={styles.currentSpend}>${r.currentSpend}/mo current</span>
-              <span className={styles.arrow}>&rarr;</span>
-              <span className={styles.action}>{r.recommendedAction}</span>
+          );
+        })}
+      </div>
+
+      <div className={styles.compareSection}>
+        <h3 className={styles.sectionTitle}>Compare Tools</h3>
+        <p className={styles.compareDesc}>Select up to 3 tools to compare side-by-side.</p>
+        <div className={styles.compareChips}>
+          {allToolNames.map(name => (
+            <button
+              key={name}
+              className={`${styles.compareChip} ${compareTools.includes(name) ? styles.compareChipActive : ''}`}
+              onClick={() => toggleCompare(name)}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+        {compareTools.length >= 2 && (
+          <div className={styles.compareTable}>
+            <div className={styles.compareRow}>
+              <div className={styles.compareLabel} />
+              {compareTools.map(name => (
+                <div key={name} className={styles.compareHead}>{name}</div>
+              ))}
+            </div>
+            <div className={styles.compareRow}>
+              <div className={styles.compareLabel}>Price</div>
+              {compareTools.map(name => {
+                const b = TOOL_BENCHMARKS[name];
+                return <div key={name} className={styles.compareCell}>${(b.costPerTask * 1000).toFixed(0)}/1K tasks</div>;
+              })}
+            </div>
+            <div className={styles.compareRow}>
+              <div className={styles.compareLabel}>Quality</div>
+              {compareTools.map(name => {
+                const b = TOOL_BENCHMARKS[name];
+                const best = Math.max(...compareTools.map(n => TOOL_BENCHMARKS[n].quality));
+                return (
+                  <div key={name} className={`${styles.compareCell} ${b.quality === best ? styles.compareBest : ''}`}>
+                    {b.quality}%
+                  </div>
+                );
+              })}
+            </div>
+            <div className={styles.compareRow}>
+              <div className={styles.compareLabel}>Speed</div>
+              {compareTools.map(name => {
+                const b = TOOL_BENCHMARKS[name];
+                const best = Math.max(...compareTools.map(n => TOOL_BENCHMARKS[n].speed));
+                return (
+                  <div key={name} className={`${styles.compareCell} ${b.speed === best ? styles.compareBest : ''}`}>
+                    {b.speed}%
+                  </div>
+                );
+              })}
+            </div>
+            <div className={styles.compareRow}>
+              <div className={styles.compareLabel}>Cost/task</div>
+              {compareTools.map(name => {
+                const b = TOOL_BENCHMARKS[name];
+                const cheapest = Math.min(...compareTools.map(n => TOOL_BENCHMARKS[n].costPerTask));
+                return (
+                  <div key={name} className={`${styles.compareCell} ${b.costPerTask === cheapest ? styles.compareBest : ''}`}>
+                    ${b.costPerTask}
+                  </div>
+                );
+              })}
+            </div>
+            <div className={styles.compareRow}>
+              <div className={styles.compareLabel}>Monthly (10 seats)</div>
+              {compareTools.map(name => {
+                const b = TOOL_BENCHMARKS[name];
+                const monthly = Math.round(b.costPerTask * 10000);
+                const cheapest = Math.min(...compareTools.map(n => Math.round(TOOL_BENCHMARKS[n].costPerTask * 10000)));
+                return (
+                  <div key={name} className={`${styles.compareCell} ${monthly === cheapest ? styles.compareBest : ''}`}>
+                    ${monthly}/mo
+                  </div>
+                );
+              })}
             </div>
           </div>
-        ))}
+        )}
       </div>
 
       {!submitted ? (
