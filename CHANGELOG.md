@@ -1,5 +1,12 @@
 # Credex AI Audit Tool - Changelog
 
+## [10-05-2026] - Compare Models Integration & Exam Prep
+*Note: Progress was a bit lighter today as the primary focus is preparing for the "Cryptography and System Security" endsem exam tomorrow. All the best!*
+### Added
+- **Dynamic "Compare Models" Button**: A new interactive button that sits beside the primary recommendation action on every tool card.
+- **Side-by-Side Analysis**: Clicking the compare button instantly populates the comparison table at the bottom of the page with the current model and the engine's suggested alternative model, then smoothly scrolls the user down to view the head-to-head stats.
+- **Baseline Fallbacks**: Even if the user's current tool is optimal, the button uses a smart baseline fallback (like comparing against ChatGPT or Claude) to ensure the comparison feature is always available.
+
 ## [09-05-2026] - Intelligence & UX Polish
 ### Added
 - **Dynamic Pricing Engine**: Replaced manual spend inputs with an automated engine that calculates exact costs based on chosen tools, plans, and seats.
