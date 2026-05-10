@@ -232,6 +232,24 @@
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
+.compareBtnSecondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.compareBtnSecondary:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+
 .compareSection {
   background: var(--card);
   border: 1px solid var(--border);

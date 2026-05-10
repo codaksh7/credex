@@ -64,6 +64,14 @@ export default function AuditResults() {
     );
   };
 
+  const handleCompareModels = (currentTool: string, suggestedTool: string) => {
+    setCompareTools([currentTool, suggestedTool]);
+    const compareSec = document.getElementById('compare-section');
+    if (compareSec) {
+      compareSec.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const isHighSavings = totalMonthlySavings > 500;
   const allToolNames = Object.keys(TOOL_BENCHMARKS);
 
@@ -104,6 +112,11 @@ export default function AuditResults() {
         <h3 className={styles.sectionTitle}>Per-Tool Breakdown</h3>
         {results.map((r, i) => {
           const bench = TOOL_BENCHMARKS[r.toolName];
+          
+          let suggestedTool: string | null = null;
+          if (r.recommendedAction.startsWith('Switch to ')) suggestedTool = r.recommendedAction.replace('Switch to ', '');
+          if (r.recommendedAction.startsWith('Upgrade to ')) suggestedTool = r.recommendedAction.replace('Upgrade to ', '');
+
           return (
             <div key={i} className={styles.resultItem}>
               <div className={styles.resultHeader}>
@@ -138,16 +151,26 @@ export default function AuditResults() {
               <div className={styles.actionRow}>
                 <span className={styles.currentSpend}>${r.currentSpend}/mo current</span>
                 <span className={styles.arrow}>&rarr;</span>
-                <button onClick={handleSwitch} className={styles.actionBtn}>
-                  {r.recommendedAction}
-                </button>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <button onClick={handleSwitch} className={styles.actionBtn}>
+                    {r.recommendedAction}
+                  </button>
+                  {suggestedTool && (
+                    <button 
+                      onClick={() => handleCompareModels(r.toolName, suggestedTool!)} 
+                      className={styles.compareBtnSecondary}
+                    >
+                      Compare Models
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className={styles.compareSection}>
+      <div id="compare-section" className={styles.compareSection}>
         <h3 className={styles.sectionTitle}>Compare Tools</h3>
         <p className={styles.compareDesc}>Select up to 3 tools to compare side-by-side.</p>
         <div className={styles.compareChips}>
