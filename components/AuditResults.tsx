@@ -116,6 +116,10 @@ export default function AuditResults() {
           let suggestedTool: string | null = null;
           if (r.recommendedAction.startsWith('Switch to ')) suggestedTool = r.recommendedAction.replace('Switch to ', '');
           if (r.recommendedAction.startsWith('Upgrade to ')) suggestedTool = r.recommendedAction.replace('Upgrade to ', '');
+          
+          if (!suggestedTool) {
+            suggestedTool = r.toolName === 'ChatGPT' ? 'Claude' : 'ChatGPT';
+          }
 
           return (
             <div key={i} className={styles.resultItem}>
