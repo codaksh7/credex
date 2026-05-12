@@ -44,7 +44,9 @@ export async function POST(req: Request) {
       auditId = Buffer.from(JSON.stringify(shareData)).toString('base64url');
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const host = req.headers.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
     const shareUrl = `${baseUrl}/share/${auditId}`;
 
     if (process.env.RESEND_API_KEY) {
