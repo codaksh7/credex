@@ -22,8 +22,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 async function getAuditData(id: string) {
-  const { data } = await supabase.from('audits').select('results, total_savings').eq('id', id).single();
-  if (data) return data;
+  if (supabase) {
+    const { data } = await supabase.from('audits').select('results, total_savings').eq('id', id).single();
+    if (data) return data;
+  }
 
   try {
     const decoded = Buffer.from(id, 'base64url').toString('utf-8');

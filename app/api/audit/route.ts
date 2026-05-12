@@ -19,23 +19,28 @@ export async function POST(req: Request) {
 
     let auditId: string | null = null;
 
-    const { data, error } = await supabase
-      .from('audits')
-      .insert({
-        email,
-        company: company || null,
-        team_size: teamSize,
-        tools,
-        results,
-        total_savings: totalSavings,
-      })
-      .select('id')
-      .single();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('audits')
+        .insert({
+          email,
+          company: company || null,
+          team_size: teamSize,
+          tools,
+          results,
+          total_savings: totalSavings,
+        })
+        .select('id')
+        .single();
 
-    if (data && !error) {
-      auditId = data.id;
-    } else {
-      console.error('Supabase insert error:', error);
+      if (data && !error) {
+        auditId = data.id;
+      } else {
+        console.error('Supabase insert error:', error);
+      }
+    }
+
+    if (!auditId) {
       auditId = Buffer.from(JSON.stringify(shareData)).toString('base64url');
     }
 

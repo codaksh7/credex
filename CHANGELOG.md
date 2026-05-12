@@ -1,5 +1,13 @@
 # Credex AI Audit Tool - Changelog
 
+## [12-05-2026] - Deployment & Documentation Finalization
+### Added
+- **Production Deployment**: Deployed the complete application to Vercel with all environment variables configured.
+- **Comprehensive README**: Rewrote the README with full feature list, architecture diagram, tech stack table, design decisions, and deployment instructions.
+
+### Changed
+- **Final Documentation Cleanup**: Consolidated all markdown docs (CHANGELOG, README) to reflect the current state of the platform accurately.
+
 ## [11-05-2026] - Interactive Globe Rebuild
 ### Added
 - **Split-Open Globe Animation**: The hero wireframe globe now splits into two halves on hover, morphing into two clean interactive circles via a smooth CSS transition.
