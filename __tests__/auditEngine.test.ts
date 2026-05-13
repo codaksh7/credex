@@ -24,11 +24,11 @@ describe('Audit Engine Optimization Logic', () => {
     expect(results[0].savings).toBe(200);
   });
 
-  test('4. Credex Credit Opportunity for High Spend', () => {
+  test('4. OpenAI API Switch Recommendation for General Assistant', () => {
     const tools: ToolInput[] = [{ name: 'OpenAI API', plan: 'Pay as you go', monthlySpend: 1000, seats: 10, useCase: 'General Assistant' }];
     const results = analyzeSpend(tools, 10, 'mixed');
-    expect(results[0].recommendedAction).toBe('Purchase through Credex Credits');
-    expect(results[0].savings).toBe(200);
+    expect(results[0].recommendedAction).toBe('Switch to ChatGPT');
+    expect(results[0].savings).toBe(800); // 1000 - (10 * 20)
   });
 
   test('5. Optimal Spend (No Savings)', () => {
