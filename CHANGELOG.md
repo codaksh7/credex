@@ -1,5 +1,7 @@
 # Credex AI Audit Tool - Changelog
 
+13-05-2026: Deployed and submitted
+
 ## [12-05-2026] - Deployment & Documentation Finalization
 ### Added
 - **Production Deployment**: Deployed the complete application to Vercel with all environment variables configured.
